@@ -1,0 +1,86 @@
+- name: users
+  hosts: all
+  vars:
+    user_password: "{{ psk | password_hash('sha512') }}"
+  vars_files:
+  - vars.yaml
+  become: yes
+
+  tasks:
+  - name: add the user account
+    user:
+      uid: 10990
+      name: "{{ user_name }}"
+      password: "{{ user_password }}"
+      shell: /bin/bash
+      state: present
+
+- name: ulimit
+  hosts: all
+  vars:
+    ulimit_dir: "/etc/security/limits.d"
+  vars_files:
+  - vars.yaml
+  become: yes
+
+  tasks:
+  - name: delete the limits.d directory
+    file:
+      path: "{{ ulimit_dir }}"
+      state: absent
+
+  - name: recreate the limits.d directory
+    file:
+      path: "{{ ulimit_dir }}"
+      state: directory
+      mode: '0755'
+
+  - name: create the file with ulimit values
+    copy:
+      dest: "{{ ulimit_dir }}/10-{{ user_name }}.conf"
+      content: |
+        {{ user_name }} - nofile 65536
+        {{ user_name }} - nproc  131072
+        {{ user_name }} - stack  131072
+
+- name: software
+  hosts: all
+  become: yes
+
+  tasks:
+  - name: git
+    dnf:
+      name: git
+      state: present
+  - name: postgres
+    dnf:
+      name:
+      - postgresql
+      - postgresql-server
+      state: present
+  - name: networking tools
+    dnf:
+      name:
+      - curl
+      - nc
+      - rsync
+      - wget
+      state: present
+  - name: editor
+    dnf:
+      name:
+      - vim
+      - emacs
+      state: present
+  - name: compression
+    dnf:
+      name:
+      - pbzip2
+      - xz
+      state: present
+  - name: system tools
+    dnf:
+      name:
+      - mc
+      - strace
+      state: present
