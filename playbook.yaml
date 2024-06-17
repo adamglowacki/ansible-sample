@@ -84,3 +84,7 @@
       - mc
       - strace
       state: present
+  - name: containers
+    dnf:
+      name: podman
+      state: present
